@@ -4,3 +4,5 @@
 *build*
 *data*
 bin
+ext/glslang
+ext/vulkan-headers

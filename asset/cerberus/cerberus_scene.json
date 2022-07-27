@@ -1,0 +1,20 @@
+{
+  "model_count": 1,
+  "model_1":{
+    "mesh": "../scenes/cerberus/meshes/cerberus_mesh.obj",
+    "albedo": "../scenes/cerberus/materials/cerberus/cerberus_albedo.png",
+    "normal": "../scenes/cerberus/materials/cerberus/cerberus_normal.png",
+    "ambient": "../scenes/cerberus/materials/cerberus/cerberus_ao.png",
+    "roughness": "../scenes/cerberus/materials/cerberus/cerberus_rough.png",
+    "metallic": "../scenes/cerberus/materials/cerberus/cerberus_metal.png"
+  },
+  "light_count": 2,
+  "light_1": {
+    "position": [3.0,3.0,3.0],
+    "radiance": [110.0,110.0,110.0]
+  },
+  "light_2": {
+    "position": [3.0,3.0,-3.0],
+    "radiance": [110.0,110.0,110.0]
+  }
+}

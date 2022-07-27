@@ -8,17 +8,12 @@ project(KullaContyIBL LANGUAGES CXX C)
 
 set(BUILD_ENABLE_OPENGL ON)
 add_subdirectory(ext/CGUtils)
+add_subdirectory(ext/glslang)
 
-file(
-        GLOB_RECURSE SRCS
-        "${PROJECT_SOURCE_DIR}/src/*.cpp"
-        "${PROJECT_SOURCE_DIR}/src/*.hpp"
-)
 
-add_executable(KullaContyIBL ${SRCS})
+add_subdirectory(opengl)
 
-target_link_libraries(KullaContyIBL PRIVATE CGUtils)
+add_subdirectory(vulkan)
 
-target_include_directories(KullaContyIBL PRIVATE ${PROJECT_SOURCE_DIR}/ext/cy)
 
-target_compile_features(KullaContyIBL PRIVATE cxx_std_20)
+
