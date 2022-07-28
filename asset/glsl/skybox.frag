@@ -9,8 +9,8 @@ layout(set = 0, binding = 1) uniform sampler2D EnvMap;
 void main() {
     vec3 dir = normalize(iFragPos);
 
-    vec2 uv = vec2(atan(dir.z,dir.x),asin(dir.y));
-    uv *= vec2(0.1591,0.3183);
-    uv += 0.5;
-    oFragColor = texture(EnvMap,uv);
+    vec2 uv = vec2(atan(dir.z,dir.x),acos(-dir.y));
+    uv *= vec2(0.1591549,0.3183099);
+    uv += vec2(0.5,0);
+    oFragColor = vec4(pow(textureLod(EnvMap,uv,0).rgb,vec3(1.0/2.2)),1.0);
 }

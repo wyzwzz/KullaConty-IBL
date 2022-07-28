@@ -39,7 +39,7 @@ void main() {
 
     vec2 uv = (g_index + 0.5) / res;
     float phi = uv.x * 2 * PI;
-    float theta = uv.y * PI;
+    float theta = (1.0 - uv.y) * PI;
 
     vec3 local_z = vec3(sin(theta)*cos(phi), cos(theta), sin(theta)*sin(phi));
     vec3 local_y;

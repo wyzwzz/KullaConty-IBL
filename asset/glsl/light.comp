@@ -1,17 +1,109 @@
 #version 460 core
 #extension GL_KHR_vulkan_glsl : enable
+#define PI 3.14159265
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(set = 0, std140, binding = 0) uniform Params{
     int sample_count;
 };
 
-layout(set = 1, std140, binding = 0) uniform Params1{
+layout(set = 1, binding = 0) uniform sampler2D EnvMap;
+
+layout(set = 1, rgba32f, binding = 1) uniform writeonly image2D LightMap;
+
+layout(set = 1, std140, binding = 2) uniform Params1{
     float roughness;
 };
 
-layout(set = 1, binding = 1) uniform sampler2D EnvMap;
+float RadicalInverse_VdC(uint bits)
+{
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+}
 
+vec2 hammersley(uint i, uint N)
+{
+    return vec2(float(i)/float(N), RadicalInverse_VdC(i));
+}
+
+vec3 importanceSampleGGX(vec2 Xi, vec3 N, float roughness)
+{
+    float a = roughness * roughness;
+
+    float phi = 2.0 * PI * Xi.x;
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+
+    vec3 H;
+    H.x = cos(phi) * sinTheta;
+    H.y = sin(phi) * sinTheta;
+    H.z = cosTheta;
+
+    vec3 up          = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent   = normalize(cross(up, N));
+    vec3 bitangent = cross(N, tangent);
+
+    vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+    return normalize(sampleVec);
+}
+
+float distributionGGX(vec3 N, vec3 H, float roughness){
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N,H),0.f);
+    float NdotH2 = NdotH * NdotH;
+
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.f) + 1.f);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+vec3 sampleEnvMap(vec3 dir,float lod){
+    vec2 uv = vec2(atan(dir.z,dir.x),asin(dir.y));
+    uv *= vec2(0.1591,0.3183);
+    uv += 0.5;
+    return textureLod(EnvMap,uv,lod).rgb;
+}
 void main() {
+    ivec2 g_index = ivec2(gl_WorkGroupSize.xy * gl_WorkGroupID.xy + gl_LocalInvocationID.xy);
+    ivec2 res = imageSize(LightMap);
+    if(g_index.x >= res.x || g_index.y >= res.y) return;
 
+    vec2 uv = (g_index + 0.5) / res;
+    float phi = uv.x * 2 * PI;
+    float theta = (1.0 - uv.y) * PI;
+
+    vec3 wn = vec3(sin(theta)*cos(phi), cos(theta), sin(theta)*sin(phi));
+    vec3 wo = wn;
+
+    vec3 sum_light = vec3(0);
+    float sum_weight = 0;
+    for(int i = 0; i < sample_count; ++i){
+        vec2 xi = hammersley(i,sample_count);
+        vec3 wh = importanceSampleGGX(xi,wn,roughness);
+        vec3 wi = normalize(2 * dot(wo,wh) * wh - wo);
+
+        float NdotL = max(dot(wn,wi),0);
+        if(NdotL > 0){
+            float NDF = distributionGGX(wn,wh,roughness);
+            //pdf from wh to wi
+            float NdotH = max(dot(wn,wh),0);
+            float HdotL = max(dot(wh,wi),0);
+            float pdf = NDF * NdotH / (4.0 * HdotL + 0.0001);
+            float sa_texel = 4.0 * PI / (res.x * res.y);
+            float sa_sample = 1.0 / (pdf * sample_count + 0.0001);
+
+            float lod = roughness == 0 ? 0 : 0.5 * log2(sa_sample / sa_texel);
+
+            sum_light += sampleEnvMap(wi,lod) * NdotL;
+            sum_weight += NdotL;
+        }
+    }
+    sum_light /= sum_weight;
+    imageStore(LightMap,g_index,vec4(sum_light,0.0));
 }
