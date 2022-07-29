@@ -3,28 +3,18 @@ Image Based Lighting with Kulla-Conty BRDF Combined
 
 ## Implement Detail
  Some knowns
-$$
-    f_{kc} = f_{ms}(\mu_o,\mu_i) = \frac{(1-E(\mu_o))(1-E(\mu_i))}{\pi (1-E_{avg})}
-$$
-$$
-    E(\mu_o) = \int^{2\pi}_{0}\int^1_0f(\mu_o,\mu_i,\phi)\mu_id\mu_id\phi
-$$
-$$
-    E_{avg} = 2\int^1_0E(\mu)\mu d\mu
-$$
+$$f_{kc} = f_{ms}(\mu_o,\mu_i) = \frac{(1-E(\mu_o))(1-E(\mu_i))}{\pi (1-E_{avg})}$$
+
+$$E(\mu_o) = \int^{2\pi}_{0}\int^1_0f(\mu_o,\mu_i,\phi)\mu_id\mu_id\phi$$
+
+$$E_{avg} = 2\int^1_0E(\mu)\mu d\mu$$
+
 For micro-surface normal distribute function
-$$
-    pdf(\omega_h) = D(\omega_h)(\omega_h\cdot\omega_n)
-$$
-$$
-    pdf(\omega_i) = \frac{D(\omega_h)(\omega_h\cdot\omega_n)}{4(\omega_h\cdot\omega_i)}
-$$
+$$pdf(\omega_h) = D(\omega_h)(\omega_h\cdot\omega_n)$$
+
+$$pdf(\omega_i) = \frac{D(\omega_h)(\omega_h\cdot\omega_n)}{4(\omega_h\cdot\omega_i)}$$
 Sampling the $f_{kc}\cdot\cos\theta$ with $pdf(\omega_i)$
-$$
-    \frac{1}{N}\sum^N_i
-    \frac{4f_{ms}(\omega_i,\omega_o)\cdot(\omega_i,\omega_n)\cdot(\omega_i,\omega_h)}
-    {D(\omega_h)\cdot(\omega_h,\omega_n)}
-$$
+$$\frac{1}{N}\sum^N_i\frac{4f_{ms}(\omega_i,\omega_o)\cdot(\omega_i,\omega_n)\cdot(\omega_i,\omega_h)}{D(\omega_h)\cdot(\omega_h,\omega_n)}$$
 Combined with BRDF Pre-Integral in code
 ```glsl
 vec3 integrateBRDF(float NdotV,float roughness){
